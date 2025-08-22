@@ -92,3 +92,39 @@ def run_all_models(X_train, y_train, X_test, y_test):
 
     # Return as DataFrame
     return pd.DataFrame(results)
+
+def fix_dtypes(df):
+    df = df.copy()  # avoid changing original
+
+    for col in df.columns:
+        # If it's already numeric or datetime, skip
+        if pd.api.types.is_numeric_dtype(df[col]) or pd.api.types.is_datetime64_any_dtype(df[col]):
+            continue
+        
+        # Try to convert to datetime
+        try:
+            converted = pd.to_datetime(df[col], errors='raise')
+            df[col] = converted
+            print(f"[INFO] Converted '{col}' to datetime")
+            continue
+        except (ValueError, TypeError):
+            pass
+        
+        # Try to convert to numeric
+        try:
+            converted = pd.to_numeric(df[col], errors='raise')
+            df[col] = converted
+            print(f"[INFO] Converted '{col}' to numeric")
+            continue
+        except (ValueError, TypeError):
+            pass
+        
+        # If it's object or string with few unique values, convert to category
+        if df[col].dtype == object or pd.api.types.is_string_dtype(df[col]):
+            num_unique = df[col].nunique(dropna=True)
+            num_total = len(df[col])
+            if num_unique / num_total < 0.5:  # tweak threshold if needed
+                df[col] = df[col].astype('category')
+                print(f"[INFO] Converted '{col}' to category")
+
+    return df
