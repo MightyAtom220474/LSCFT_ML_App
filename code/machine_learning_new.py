@@ -128,3 +128,7 @@ def fix_dtypes(df):
                 print(f"[INFO] Converted '{col}' to category")
 
     return df
+
+# used to identify columns already one hot encoded in the source data
+def is_one_hot_column(series):
+    return set(series.dropna().unique()).issubset({0, 1})
