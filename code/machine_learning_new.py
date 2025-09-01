@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import re
 from sklearn import metrics
 from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.tree import DecisionTreeClassifier
@@ -132,3 +133,7 @@ def fix_dtypes(df):
 # used to identify columns already one hot encoded in the source data
 def is_one_hot_column(series):
     return set(series.dropna().unique()).issubset({0, 1})
+
+def clean_column(name):
+    # Replace disallowed characters with underscore
+    return re.sub(r'[\[\]{}"<>\':,]', '_', str(name))
