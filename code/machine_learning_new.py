@@ -135,5 +135,7 @@ def is_one_hot_column(series):
     return set(series.dropna().unique()).issubset({0, 1})
 
 def clean_column(name):
-    # Replace disallowed characters with underscore
-    return re.sub(r'[\[\]{}"<>\':,]', '_', str(name))
+    # Make sure it's a string first
+    name = str(name)
+    # Replace forbidden characters with underscore
+    return re.sub(r'[\[\]<>]', '_', name)
