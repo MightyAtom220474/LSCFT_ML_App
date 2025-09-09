@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 import re
 from sklearn import metrics
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report # accuracy_score
 from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, HistGradientBoostingClassifier
@@ -139,3 +142,77 @@ def clean_column(name):
     name = str(name)
     # Replace forbidden characters with underscore
     return re.sub(r'[\[\]<>]', '_', name)
+
+def prepare_data(source_df,targ_col,train_pc):
+    
+    # Separate features and target
+    X = source_df.drop(targ_col, axis=1)
+    y = source_df[targ_col]
+    # clean column names
+    X.columns = [clean_column(col) for col in X.columns]
+
+    # Detect column types
+    categorical_cols = X.select_dtypes(include=['string','object','category']).columns.tolist()
+
+    numeric_cols = X.select_dtypes(include=['int64', 'float64', 'uint8']).columns
+
+    # Identify one-hot encoded columns
+    one_hot_cols = [col for col in numeric_cols if ml.is_one_hot_column(X[col])]
+
+    # Now exclude them from numerical preprocessing
+    numerical_cols = [col for col in numeric_cols if col not in one_hot_cols]
+
+    # Fill missing values 
+    for col in categorical_cols:
+        if pd.api.types.is_categorical_dtype(X[col]):
+            if 'Missing' not in X[col].cat.categories:
+                X[col] = X[col].cat.add_categories('Missing')
+        X[col] = X[col].fillna('Missing')
+
+    X[numerical_cols] = X[numerical_cols].fillna(0)
+
+    # add prefixes to identify category groups
+    prefixes = {col: col[:3] for col in categorical_cols}
+
+    # One-hot encode categorical columns
+    X = pd.get_dummies(X, columns=categorical_cols, prefix=(prefixes), dtype=int)
+
+    # Scale numeric columns
+    scaler = StandardScaler()
+    X[numerical_cols] = scaler.fit_transform(X[numerical_cols])
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=train_pc, random_state=42)
+    
+    return X_train, X_test, y_train, y_test
+
+def run_log_reg(X_train, X_test, y_train, y_test):
+
+    # 1. Fit logistic regression
+    model = LogisticRegression(max_iter=1000)
+    model.fit(X_train, y_train)
+
+    # 2. Predictions & accuracy
+    y_pred_train = model.predict(X_train)
+    y_pred_test = model.predict(X_test)
+
+    accuracy_train = np.mean(y_pred_train == y_train)
+    accuracy_test = np.mean(y_pred_test == y_test)
+
+    print(f'Accuracy of predicting training data = {accuracy_train:.3f}')
+    print(f'Accuracy of predicting test data = {accuracy_test:.3f}')
+    print("\nClassification Report (test set):\n", classification_report(y_test, y_pred_test))
+
+    # 3. Feature effects: coefficients + odds ratios
+    co_eff = model.coef_[0]
+    intercept = model.intercept_[0]
+
+    co_eff_df = pd.DataFrame({
+        "feature": list(X_train.columns) if hasattr(X_train, "columns") else [f"X{i}" for i in range(X_train.shape[1])],
+        "coefficient (β)": co_eff,
+        "odds_ratio (exp(β))": np.exp(co_eff),
+        "abs_co_eff": np.abs(co_eff)
+    })
+
+    co_eff_df.sort_values(by="abs_co_eff", ascending=False, inplace=True)
+
+    return accuracy_train, accuracy_test, co_eff_df, intercept
