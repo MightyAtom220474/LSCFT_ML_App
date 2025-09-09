@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import machine_learning_new as ml
 
 
 st.subheader("Machine Learning Inputs")
@@ -15,9 +16,22 @@ with st.sidebar:
 
     column_headers = [column[0] for column in uploaded_df.description] 
 
-    field_of_interest = st.multiselect('Please select the data item we are trying to predict',
-                   options=column_headers,help='Please select just one value'
-                   ,max_selections=1)
+    field_of_interest = st.selectbox(
+        'Please select the data item we are trying to predict',
+        options=column_headers,
+        help='Please select just one value. This needs to be a binary value' \
+          ' e.g. 1 = readmitted 0 = not readmitted. The model will use a'\
+          '% of the data based upon the training value set below as a'
+          ' training set of data to see how well it can predict this value.'\
+          ' It will then use this training (learning) to see how accurately it'\
+          ' can predict this value within the rest data, and identify the key'\
+          ' fields within this data used to make this prediction'#,
+        #index=0  # default = blank
+    )
+    
+    # field_of_interest = st.multiselect('Please select the data item we are trying to predict',
+    #                options=column_headers,help='Please select just one value'
+    #                ,max_selections=1)
     
     train_percent_input = st.number_input("Please select the % of data to be used " \
                                     " to train the models",
@@ -25,7 +39,7 @@ with st.sidebar:
                                     value=200,help='Too large = less reliable'\
                                     ' with new data, Too small = less data to '\
                                     'learn from so less reliable. Typical '\
-                                    'valuea are between 20% and 30%')
+                                    'values are between 20% and 30%')
 
 #file_data = uploaded_file.read()
 
@@ -34,12 +48,17 @@ st.write(f'File {uploaded_file.name} has been successfully uploaded')
 st.write(f'The thing we are trying to predict is {field_of_interest}')
 
 st.write(f'We are using {train_percent_input}% of the data to train the '\
-         'models')
-
+         'model'
 # Parameters used to run the model
 train_pc = train_percent_input / 100
 
-import streamlit as st
+# get data ready for machine learning
+X_train, X_test, y_train, y_test = ml.prepare_data(uploaded_df,field_of_interest,train_pc)
+
+# put data through logistic regression model
+accuracy_train, accuracy_test, co_eff_df, intercept = ml.prepare_data(X_train, X_test, y_train, y_test))
+
+
 
 st.markdown("""
 ## 🩺 How to Interpret the Model Results  
@@ -146,9 +165,9 @@ st.dataframe(contrib_df)
 
 # Bar chart of contributions
 st.bar_chart(contrib_df.set_index("Feature")["Contribution (β*x)"])
-🔹 Step 2. Streamlit-friendly explanation text
-python
-Copy code
+# 🔹 Step 2. Streamlit-friendly explanation text
+# python
+# Copy code
 st.markdown("""
 ### 🧑‍⚕️ How to interpret the patient explanation  
 
