@@ -157,7 +157,7 @@ def prepare_data(source_df,targ_col,train_pc):
     numeric_cols = X.select_dtypes(include=['int64', 'float64', 'uint8']).columns
 
     # Identify one-hot encoded columns
-    one_hot_cols = [col for col in numeric_cols if ml.is_one_hot_column(X[col])]
+    one_hot_cols = [col for col in numeric_cols if is_one_hot_column(X[col])]
 
     # Now exclude them from numerical preprocessing
     numerical_cols = [col for col in numeric_cols if col not in one_hot_cols]
