@@ -79,7 +79,7 @@ if button_run_pressed:
                                                         ,train_pc)
 
     # put data through logistic regression model
-    accuracy_train, accuracy_test, co_eff_df, intercept = ml.run_log_reg(X_train, 
+    model, accuracy_train, accuracy_test, co_eff_df, intercept = ml.run_log_reg(X_train, 
                                                           X_test, y_train, y_test)
 
     st.write("Preview of uploaded data:")
