@@ -124,8 +124,8 @@ if button_run_pressed:
     st.pyplot(fig1)
 
     # 3. Feature effects: coefficients + odds ratios
-    co_eff = ml.model.coef_[0]
-    intercept = ml.model.intercept_[0]
+    co_eff = model.coef_[0]
+    intercept = model.intercept_[0]
 
     co_eff_df = pd.DataFrame({
         "feature": list(X_train.columns) if hasattr(X_train, "columns") else [f"X{i}" for i in range(X_train.shape[1])],
@@ -144,7 +144,7 @@ if button_run_pressed:
     st.header("📈 Probability Distribution")
 
     # Get predicted probabilities for the positive class
-    y_pred_proba = ml.model.predict_proba(X_test)[:, 1]
+    y_pred_proba = model.predict_proba(X_test)[:, 1]
 
     fig1, ax = plt.subplots()
     sns.histplot(y_pred_proba, bins=20, kde=True, ax=ax)
@@ -164,7 +164,7 @@ if button_run_pressed:
     # --- 2️⃣ Feature Effects (Odds Ratios) ---
     st.header("📊 Feature Effects (Odds Ratios)")
 
-    coeffs = ml.model.coef_[0]
+    coeffs = model.coef_[0]
     feature_names = X_train.columns if hasattr(X_train, "columns") else [f"X{i}" for i in range(len(coeffs))]
     results = pd.DataFrame({
         "Feature": feature_names,
@@ -191,7 +191,7 @@ if button_run_pressed:
     # --- 3️⃣ Confusion Matrix ---
     st.header("🟩 Confusion Matrix")
 
-    y_pred = ml.model.predict(X_test)
+    y_pred = model.predict(X_test)
     cm = confusion_matrix(y_test, y_pred)
     fig3, ax = plt.subplots()
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
@@ -353,8 +353,8 @@ if button_run_pressed:
 #     sample = pd.Series(X_test[patient_index], index=[f"X{i}" for i in range(X_test.shape[1])])
 
 # # Compute linear combination (z) and probability
-# coeffs = ml.model.coef_[0]
-# intercept = ml.model.intercept_[0]
+# coeffs = model.coef_[0]
+# intercept = model.intercept_[0]
 # z = intercept + np.dot(coeffs, sample)
 # prob = 1 / (1 + np.exp(-z))
 # pred_class = int(prob >= 0.5)
