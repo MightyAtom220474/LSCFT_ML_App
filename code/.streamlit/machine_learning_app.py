@@ -186,7 +186,9 @@ if button_run_pressed:
         data=top_10_df,
         x="odds_ratio (exp(β))",
         y="feature",
-        palette=top_10_df["color"],
+        hue="effect",              # use categorical hue
+        palette={"Increases Risk": "green", "Decreases Risk": "orange"},
+        dodge=False,               # bars should stay in single column
         ax=ax
     )
 
