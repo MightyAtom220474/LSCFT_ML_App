@@ -180,6 +180,14 @@ if button_run_pressed:
     # Add color based on OR
     top_10_df["color"] = top_10_df["odds_ratio (exp(β))"].apply(lambda x: "green" if x > 1 else "orange")
 
+    # Ensure 'effect' column exists before plotting
+    if "effect" not in top_10_df.columns:
+        top_10_df["effect"] = np.where(
+            top_10_df["odds_ratio (exp(β))"] > 1,
+            "Increases Risk",
+            "Decreases Risk"
+        )
+    
     fig2, ax = plt.subplots(figsize=(8, 5))
 
     sns.barplot(
