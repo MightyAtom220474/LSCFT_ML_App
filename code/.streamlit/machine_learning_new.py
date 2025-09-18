@@ -39,6 +39,7 @@ def model_runner(X_train, y_train, X_test, y_test, model_type, model_name):
 
     return {
         'Model': model_name,
+        'Trained_Model':model,
         'Training_accuracy': accuracy_train,
         'Test_accuracy': accuracy_test,
         'Precision': precision_score_test,
@@ -215,4 +216,4 @@ def run_log_reg(X_train, X_test, y_train, y_test):
 
     co_eff_df.sort_values(by="abs_co_eff", ascending=False, inplace=True)
 
-    return accuracy_train, accuracy_test, co_eff_df, intercept
+    return model, accuracy_train, accuracy_test, co_eff_df, intercept
