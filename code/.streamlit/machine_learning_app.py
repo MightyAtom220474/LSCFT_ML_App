@@ -174,6 +174,8 @@ if button_run_pressed:
 
     st.dataframe(results)
 
+    top_10_df["odds_ratio (exp(β))"] = pd.to_numeric(top_10_df["odds_ratio (exp(β))"], errors='coerce')
+
     top_10_df["color"] = top_10_df["odds_ratio (exp(β))"].apply(lambda x: "green" if x > 1 else "orange")
 
     fig2, ax = plt.subplots(figsize=(8, 5))
