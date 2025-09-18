@@ -5,8 +5,8 @@ import numpy as np
 import machine_learning_new as ml
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc, calibration_curve
-
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
+from sklearn.calibration import calibration_curve
 
 
 st.subheader("Machine Learning Inputs")
