@@ -175,7 +175,9 @@ if button_run_pressed:
     st.dataframe(results)
 
     top_10_df["odds_ratio (exp(β))"] = pd.to_numeric(top_10_df["odds_ratio (exp(β))"], errors='coerce')
+    top_10_df = top_10_df.dropna(subset=["odds_ratio (exp(β))"])
 
+    # Add color based on OR
     top_10_df["color"] = top_10_df["odds_ratio (exp(β))"].apply(lambda x: "green" if x > 1 else "orange")
 
     fig2, ax = plt.subplots(figsize=(8, 5))
@@ -188,16 +190,14 @@ if button_run_pressed:
         ax=ax
     )
 
-    # Reference line at OR = 1
     ax.axvline(1, color="red", linestyle="--", linewidth=1)
-
-    ax.set_title("Top 10 Feature Effects (Odds Ratios)")
-    ax.set_xlabel("Odds Ratio (exp(β))")
+    ax.set_xscale("log")
+    ax.set_title("Top 10 Feature Effects (Odds Ratios, Log Scale)")
+    ax.set_xlabel("Odds Ratio (log scale)")
     ax.set_ylabel("Feature")
-    ax.invert_yaxis()  # most influential feature at the top
+    ax.invert_yaxis()
 
     st.pyplot(fig2)
-
     st.markdown("""
     **Feature Effects (Top 10 Odds Ratios):**  
     - The **red dashed line** represents an odds ratio of **1** (no effect).  
