@@ -216,4 +216,6 @@ def run_log_reg(X_train, X_test, y_train, y_test):
 
     co_eff_df.sort_values(by="abs_co_eff", ascending=False, inplace=True)
 
-    return model, accuracy_train, accuracy_test, co_eff_df, intercept
+    top_10_df = co_eff_df.head(10)
+
+    return model, accuracy_train, accuracy_test, co_eff_df, top_10_df, intercept

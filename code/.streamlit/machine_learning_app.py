@@ -79,7 +79,7 @@ if button_run_pressed:
                                                         ,train_pc)
 
     # put data through logistic regression model
-    model, accuracy_train, accuracy_test, co_eff_df, intercept = ml.run_log_reg(X_train, 
+    model, accuracy_train, accuracy_test, co_eff_df, top_10_df, intercept = ml.run_log_reg(X_train, 
                                                           X_test, y_train, y_test)
 
     st.write("Preview of uploaded data:")
@@ -174,19 +174,43 @@ if button_run_pressed:
 
     st.dataframe(results)
 
-    fig2, ax = plt.subplots()
-    sns.barplot(data=results, x="Odds Ratio (exp(β))", y="Feature", ax=ax)
-    ax.axvline(1, color='red', linestyle='--')
-    ax.set_title("Feature Effects (Odds Ratios)")
+    top_10_df["color"] = top_10_df["odds_ratio (exp(β))"].apply(lambda x: "green" if x > 1 else "orange")
+
+    fig2, ax = plt.subplots(figsize=(8, 5))
+
+    sns.barplot(
+        data=top_10_df,
+        x="odds_ratio (exp(β))",
+        y="feature",
+        palette=top_10_df["color"],
+        ax=ax
+    )
+
+    # Reference line at OR = 1
+    ax.axvline(1, color="red", linestyle="--", linewidth=1)
+
+    ax.set_title("Top 10 Feature Effects (Odds Ratios)")
+    ax.set_xlabel("Odds Ratio (exp(β))")
+    ax.set_ylabel("Feature")
+    ax.invert_yaxis()  # most influential feature at the top
+
     st.pyplot(fig2)
 
     st.markdown("""
-    **How to interpret:**  
-    - **Odds Ratio > 1** → feature increases likelihood of outcome.  
-    - **Odds Ratio < 1** → feature decreases likelihood of outcome.  
-    - The red dashed line shows **no effect (Odds Ratio = 1)**.  
-    - The further a bar is from 1, the stronger its effect on predictions.
+    **Feature Effects (Top 10 Odds Ratios):**  
+    - The **red dashed line** represents an odds ratio of **1** (no effect).  
+    - **Green bars (OR > 1)** increase the likelihood of the outcome.  
+    - **Orange bars (OR < 1)** decrease the likelihood of the outcome.  
+    - The further a bar is from 1, the stronger its influence on the prediction.
     """)
+
+    # st.markdown("""
+    # **How to interpret:**  
+    # - **Odds Ratio > 1** → feature increases likelihood of outcome.  
+    # - **Odds Ratio < 1** → feature decreases likelihood of outcome.  
+    # - The red dashed line shows **no effect (Odds Ratio = 1)**.  
+    # - The further a bar is from 1, the stronger its effect on predictions.
+    # """)
 
     # --- 3️⃣ Confusion Matrix ---
     st.header("🟩 Confusion Matrix")
