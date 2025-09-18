@@ -91,24 +91,13 @@ if button_run_pressed:
     st.write(f'We are using {train_percent_input}% of the data to train the '\
         'model')
     
-    st.write("\nIntercept (β0):", intercept)
+    st.write(f"\nAccuracy of Training Dataset: {accuracy_train}")
+    st.write(f"\nAccuracy of Test Dataset: {accuracy_test}")    
+    st.write(f"\nIntercept (β0): {intercept}")
     st.write("\nFeature Effects (sorted by influence):")
     st.write(co_eff_df[["feature", "coefficient (β)", "odds_ratio (exp(β))"]])
 
-    # 4. Step-by-step prediction on one sample
-    # if hasattr(X_test, "iloc"):
-    #     sample = X_test.iloc[0]
-    # else:
-    #     sample = X_test[0]
-
-    # z = intercept + np.dot(co_eff_df, sample)
-    # prob = 1 / (1 + np.exp(-z))
-
-    # print("\nExample sample:")
-    # print(sample)
-    # print("Linear combination (z):", z)
-    # print("Predicted probability of class 1:", prob)
-    # print("Predicted class:", int(prob >= 0.5))
+    
 
     fig1, ax = plt.subplots()
     co_eff_df.head(10).plot(
@@ -140,8 +129,8 @@ if button_run_pressed:
     print("\nFeature Effects (sorted by influence):")
     print(co_eff_df[["feature", "coefficient (β)", "odds_ratio (exp(β))"]])
 
-    # --- 1️⃣ Probability Predictions Distribution ---
-    st.header("📈 Probability Distribution")
+    # Probability Predictions Distribution
+    st.header("Probability Distribution")
 
     # Get predicted probabilities for the positive class
     y_pred_proba = model.predict_proba(X_test)[:, 1]
@@ -161,8 +150,8 @@ if button_run_pressed:
     - A clear separation means the model is good at distinguishing the two classes.
     """)
 
-    # --- 2️⃣ Feature Effects (Odds Ratios) ---
-    st.header("📊 Feature Effects (Odds Ratios)")
+    # Feature Effects 
+    st.header("Feature Effects (Odds Ratios)")
 
     coeffs = model.coef_[0]
     feature_names = X_train.columns if hasattr(X_train, "columns") else [f"X{i}" for i in range(len(coeffs))]
@@ -184,8 +173,8 @@ if button_run_pressed:
     if "effect" not in top_10_df.columns:
         top_10_df["effect"] = np.where(
             top_10_df["odds_ratio (exp(β))"] > 1,
-            "Increases Risk",
-            "Decreases Risk"
+            "Increases Prob",
+            "Decreases Prob"
         )
     
     fig2, ax = plt.subplots(figsize=(8, 5))
@@ -213,7 +202,8 @@ if button_run_pressed:
     - The **red dashed line** represents an odds ratio of **1** (no effect).  
     - **Green bars (OR > 1)** increase the likelihood of the outcome.  
     - **Orange bars (OR < 1)** decrease the likelihood of the outcome.  
-    - The further a bar is from 1, the stronger its influence on the prediction.
+    - The further a bar is from the red line, the stronger its influence 
+    - on the prediction.
     """)
 
     # st.markdown("""
@@ -224,8 +214,8 @@ if button_run_pressed:
     # - The further a bar is from 1, the stronger its effect on predictions.
     # """)
 
-    # --- 3️⃣ Confusion Matrix ---
-    st.header("🟩 Confusion Matrix")
+    # Confusion Matrix
+    st.header("Confusion Matrix")
 
     y_pred = model.predict(X_test)
     cm = confusion_matrix(y_test, y_pred)
@@ -242,8 +232,8 @@ if button_run_pressed:
     - Helps clinicians understand the trade-off between missed cases and false alarms.
     """)
 
-    # --- 4️⃣ Calibration Curve ---
-    st.header("📐 Calibration Curve")
+    # Calibration Curve
+    st.header("Calibration Curve")
 
     prob_true, prob_pred = calibration_curve(y_test, y_pred_proba, n_bins=10)
     fig4, ax = plt.subplots()
@@ -264,8 +254,8 @@ if button_run_pressed:
       if it's **below**, it's over-confident.
     """)
 
-    # --- 5️⃣ ROC Curve ---
-    st.header("🚦 ROC Curve")
+    # ROC Curve
+    st.header("ROC Curve")
 
     fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba)
     roc_auc = auc(fpr, tpr)
@@ -289,95 +279,12 @@ if button_run_pressed:
       - >0.9 = excellent  
     """)
     
-    # st.write(
-    #   ### 2. 📊 Feature Effects (Odds Ratios)
-    # """Feature Effects - Explanation
-    # - The model looks at all the features in the dataset (e.g. age, BMI, smoking status).  
-    # - Each feature has a **coefficient**, which we turn into an **odds ratio**.  
-    # - **Odds ratio > 1** → the feature **increases** the likelihood of the outcome.  
-    # - **Odds ratio < 1** → the feature **decreases** the likelihood of the outcome.  
-    # - Example:  
-    #   - Odds ratio = 1.5 → a one-unit increase makes the outcome **50% more likely**.  
-    #   - Odds ratio = 0.7 → a one-unit increase makes the outcome **30% less likely**.""")  
-
-#     # === 1. Bar chart of odds ratios ===
-#     plt.figure(figsize=(8,6))
-#     sns.barplot(
-#         data=results,
-#         x="odds_ratio (exp(β))",
-#         y="feature",
-#         palette="coolwarm",
-#         orient="h"
-#     )
-#     plt.axvline(1, color="black", linestyle="--")
-#     plt.title("Feature Importance (Odds Ratios)")
-#     plt.xlabel("Odds Ratio (exp(β))")
-#     plt.ylabel("Feature")
-#     plt.show()
-
-
-
-# st.markdown("""
-# ## 🩺 How to Interpret the Model Results  
-
-# This tool uses a **logistic regression machine learning model**. Logistic regression predicts the **probability** that something is true (e.g. whether a patient has a certain outcome).  
-
-# ---
-
-# ### 1. 🔢 Probabilities and Predictions
-# - Each patient is given a **probability score** between 0 and 1.  
-# - If the probability is greater than **0.5**, the model predicts **Yes (Class 1)**.  
-# - If it is less than 0.5, the model predicts **No (Class 0)**.  
-
-
-
-# ---
-
-# ### 3. ✅ Confusion Matrix
-# - Shows how often the model was correct or incorrect on the test data.  
-# - **True positives** → correctly predicted cases with the outcome.  
-# - **True negatives** → correctly predicted cases without the outcome.  
-# - **False positives / negatives** → cases where the model got it wrong.  
-# - This helps staff see the trade-off between **missed cases** and **over-calling**.  
-
-# ---
-
-# ### 4. 📈 Probability Distributions
-# - Shows how well the model separates the two groups.  
-# - Ideally, patients with the outcome cluster on the **right** (higher probabilities),  
-#   and patients without the outcome cluster on the **left** (lower probabilities).  
-
-# ---
-
-# ### 5. 🎯 Calibration Curve
-# - Checks if the probabilities are **trustworthy**.  
-# - Example: If the model says “70% probability”, then about 70% of those patients should really have the outcome.  
-
-# ---
-
-# ### 6. 🚦 ROC Curve (Discrimination Ability)
-# - Shows how well the model distinguishes between patients with and without the outcome.  
-# - The closer the curve is to the top left, the better.  
-# - **AUC value (Area Under Curve)**:  
-#   - 0.5 = no better than chance  
-#   - 0.7–0.8 = acceptable  
-#   - 0.8–0.9 = good  
-#   - >0.9 = excellent  
-
-# ---
-
-# ✅ **In summary**:  
-# - **Probabilities** → how confident the model is.  
-# - **Odds ratios** → which features push predictions up or down.  
-# - **Plots** → how reliable and accurate the model is.  
-# """)
-
 ##############################
 ## Specific Patient Example ##
 ##############################
 
 # # Select a patient from uploaded dataset
-# st.subheader("🔍 Individual Patient Explanation")
+# st.subheader("Individual Patient Explanation")
 
 # # Let user pick a row
 # patient_index = st.number_input("Select patient index", min_value=0, max_value=len(X_test)-1, value=0)
