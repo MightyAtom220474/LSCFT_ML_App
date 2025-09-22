@@ -219,3 +219,54 @@ def run_log_reg(X_train, X_test, y_train, y_test):
     top_10_df = co_eff_df.head(10)
 
     return model, accuracy_train, accuracy_test, co_eff_df, top_10_df, intercept
+
+
+# this function turns the probability coefficients and odds ration into a 
+# probability % increase with explanation
+def prob_change_table_with_interpretation(coeff_df, X_train, baseline_prob=0.2, delta_x=1):
+    """
+    Create a probability change table with human-readable interpretations
+    for one-hot encoded features.
+
+    Args:
+        coeff_df (pd.DataFrame): Must have 'feature' and 'coefficient (β)' columns.
+        X_train (pd.DataFrame): Training data (used to detect one-hot columns).
+        baseline_prob (float): Baseline probability (0–1).
+        delta_x (float): Change in feature value (default 1).
+
+    Returns:
+        pd.DataFrame: Table with interpretation text, probabilities and changes.
+    """
+    baseline_odds = baseline_prob / (1 - baseline_prob)
+
+    results = coeff_df.copy()
+    results["baseline_prob"] = baseline_prob
+    results["new_prob"] = (baseline_odds * np.exp(results["coefficient (β)"] * delta_x)) / \
+                          (1 + (baseline_odds * np.exp(results["coefficient (β)"] * delta_x)))
+    results["absolute_change"] = results["new_prob"] - results["baseline_prob"]
+
+    # Detect one-hot columns: only 0/1 values
+    one_hot_cols = [col for col in X_train.columns if set(X_train[col].unique()) <= {0, 1}]
+
+    interpretations = []
+    for feature in results["feature"]:
+        if feature in one_hot_cols:
+            # Make interpretation more readable: replace underscores and prefix "Effect of being"
+            human_readable = feature.replace("_", " ")
+            interpretations.append(f"Effect of being {human_readable}")
+        else:
+            interpretations.append(f"Effect of increasing {feature} by {delta_x}")
+    
+    results["interpretation"] = interpretations
+
+    # Sort by absolute effect
+    results = results.sort_values(by="absolute_change", ascending=False)
+
+    return results[[
+        "feature", "interpretation", "coefficient (β)", "odds_ratio (exp(β))",
+        "baseline_prob", "new_prob", "absolute_change"
+    ]]
+
+# Example usage:
+# prob_table = prob_change_table_with_interpretation(co_eff_df, X_train, baseline_prob=0.2)
+# print(prob_table.head(10))
