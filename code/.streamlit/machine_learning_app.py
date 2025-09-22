@@ -184,7 +184,7 @@ if button_run_pressed:
         x="odds_ratio (exp(β))",
         y="feature",
         hue="effect",              # use categorical hue
-        palette={"Increases Risk": "green", "Decreases Risk": "orange"},
+        palette={"Increases Prob": "green", "Decreases Prob": "orange"},
         dodge=False,               # bars should stay in single column
         ax=ax
     )
