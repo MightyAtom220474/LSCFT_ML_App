@@ -243,8 +243,7 @@ def prob_change_table_with_interpretation(coeff_df, X_train, baseline_prob=0.2, 
     results["baseline_prob"] = baseline_prob * 100
     results["new_prob"] = (baseline_odds * np.exp(results["coefficient (β)"] * delta_x)) / \
                           (1 + (baseline_odds * np.exp(results["coefficient (β)"] * delta_x))) * 100
-    results["absolute_change"] = (results["new_prob"] - results["baseline_prob"]) * 100
-
+    results["absolute_change"] = (results["new_prob"] - results["baseline_prob"])
     # Detect one-hot columns: only 0/1 values
     one_hot_cols = [col for col in X_train.columns if set(X_train[col].unique()) <= {0, 1}]
 
