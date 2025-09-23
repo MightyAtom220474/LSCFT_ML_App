@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import machine_learning_new as ml
 import numpy as np
 import machine_learning_new as ml
 import matplotlib.pyplot as plt
@@ -206,14 +205,15 @@ if button_run_pressed:
     - on the prediction.
     """)
 
-    # st.markdown("""
-    # **How to interpret:**  
-    # - **Odds Ratio > 1** → feature increases likelihood of outcome.  
-    # - **Odds Ratio < 1** → feature decreases likelihood of outcome.  
-    # - The red dashed line shows **no effect (Odds Ratio = 1)**.  
-    # - The further a bar is from 1, the stronger its effect on predictions.
-    # """)
+    baseline_p = y_train.mean()
+    prob_table = ml.prob_change_table_with_interpretation(co_eff_df, X_train, baseline_prob=baseline_p)
+    prob_table_top_10 = prob_table.head(10)
 
+    st.markdown('How to interpret the results')
+    
+    st.write(prob_table_top_10)
+
+    
     # Confusion Matrix
     st.header("Confusion Matrix")
 
