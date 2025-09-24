@@ -65,7 +65,7 @@ with st.sidebar:
       st.info("Please upload a CSV file to continue.")      
 
 # Button to trigger machine learning
-button_run_pressed = st.button("Run simulation")
+button_run_pressed = st.button("Run Machine Learning")
 
 # Run the simulation only when button is pressed
 if button_run_pressed:
@@ -256,6 +256,8 @@ if button_run_pressed:
       about 70% of those patients really have the outcome).  
     - If the curve is **above** the line, the model is under-confident;  
       if it's **below**, it's over-confident.
+    - HINT If the model is over-confident try reducing the amount of training
+      data used, under-confident - try using more data to train your model 
     """)
 
     # ROC Curve
@@ -283,7 +285,7 @@ if button_run_pressed:
       - >0.9 = excellent  
     """)
 
-    st.subheader("🌍 Global Feature Importance (SHAP Summary)")
+    st.subheader("Global Feature Importance (SHAP Summary)")
 
     # Global importance (summary plot)
     fig, ax = plt.subplots()
