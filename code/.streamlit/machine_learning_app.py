@@ -56,7 +56,7 @@ with st.sidebar:
       st.subheader("Train Your Model")
       
       train_percent_input = st.number_input("Please select the % of data to be " \
-                                      " used to train the models",
+                                      " used to train the model",
                                       min_value=0, max_value=50, step=1,
                                       value=20,help='Too large = less reliable'\
                                       ' with new data, Too small = less data to '\
