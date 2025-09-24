@@ -152,6 +152,8 @@ def prepare_data(source_df,targ_col,train_pc):
     # clean column names
     X.columns = [clean_column(col) for col in X.columns]
 
+    X = X.apply(pd.to_numeric, errors="ignore")
+
     # Detect column types
     categorical_cols = X.select_dtypes(include=['string','object','category']).columns.tolist()
 
@@ -180,8 +182,11 @@ def prepare_data(source_df,targ_col,train_pc):
 
     # Scale numeric columns
     scaler = StandardScaler()
-    X[numerical_cols] = scaler.fit_transform(X[numerical_cols])
 
+    # scale numerical columns if they exist in the dataset
+    if len(numerical_cols) > 0:
+        X[numerical_cols] = scaler.fit_transform(X[numerical_cols])
+    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=train_pc, random_state=42)
     
     return X_train, X_test, y_train, y_test
