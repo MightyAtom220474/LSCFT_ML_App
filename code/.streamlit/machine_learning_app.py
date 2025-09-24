@@ -4,6 +4,7 @@ import numpy as np
 import machine_learning_new as ml
 import matplotlib.pyplot as plt
 import seaborn as sns
+import shap
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
 from sklearn.calibration import calibration_curve
 
@@ -80,6 +81,9 @@ if button_run_pressed:
     # put data through logistic regression model
     model, accuracy_train, accuracy_test, co_eff_df, top_10_df, intercept = ml.run_log_reg(X_train, 
                                                           X_test, y_train, y_test)
+    # generate shap values for plotting later
+    explainer = shap.Explainer(model, X_train)
+    shap_values = explainer(X_test)
 
     st.write("Preview of uploaded data:")
 
@@ -277,6 +281,19 @@ if button_run_pressed:
       - 0.7–0.8 = acceptable  
       - 0.8–0.9 = good  
       - >0.9 = excellent  
+    """)
+
+    st.subheader("🌍 Global Feature Importance (SHAP Summary)")
+
+    # Global importance (summary plot)
+    fig, ax = plt.subplots()
+    shap.summary_plot(shap_values, X_test, plot_type="bar", show=False)
+    st.pyplot(fig)
+
+    st.markdown("""
+    - Features at the **top** are the most influential across all patients.  
+    - **Positive values** push predictions towards Class 1.  
+    - **Negative values** push predictions towards Class 0.  
     """)
     
 ##############################
