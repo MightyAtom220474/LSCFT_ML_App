@@ -8,10 +8,14 @@ import shap
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
 from sklearn.calibration import calibration_curve
 
-
-st.subheader("Machine Learning Inputs")
-
+##############################
+##     Input Selectors      ##
+##############################
 with st.sidebar:
+    
+    st.subheader("Machine Learning Inputs")
+
+    st.divider()
 
     st.subheader("Your Data")
 
@@ -23,19 +27,13 @@ with st.sidebar:
       uploaded_df = pd.read_csv(uploaded_file)
 
       st.write(f'File {uploaded_file.name} has been successfully uploaded')
-      # # Now the rest of your app logic can go here
-      # x_cols = st.multiselect("Select X columns", options=df.columns.tolist())
-      # y_col = st.selectbox("Select target column (y)", options=df.columns.tolist())
 
-      # if st.button("Run Model"):
-      #     st.success(f"You selected {x_cols} as features and {y_col} as target")
-    
-    
-        
-
-      # column_headers = [column[0] for column in uploaded_df.description] 
       column_headers = uploaded_df.columns.tolist()
 
+      st.divider()
+
+      st.subheader("Field of Interest")
+      
       field_of_interest = st.selectbox(
           'Please select the data item we are trying to predict',
           options=column_headers,
@@ -52,6 +50,10 @@ with st.sidebar:
       # field_of_interest = st.multiselect('Please select the data item we are trying to predict',
       #                options=column_headers,help='Please select just one value'
       #                ,max_selections=1)
+
+      st.divider()
+
+      st.subheader("Train Your Model")
       
       train_percent_input = st.number_input("Please select the % of data to be " \
                                       " used to train the models",
@@ -257,7 +259,8 @@ if button_run_pressed:
     - If the curve is **above** the line, the model is under-confident;  
       if it's **below**, it's over-confident.
     - HINT If the model is over-confident try reducing the amount of training
-      data used, under-confident - try using more data to train your model 
+      data used, under-confident - try using more data to train your model. This
+      can be done by adjusting the input in the menu on the left hand side.
     """)
 
     # ROC Curve
