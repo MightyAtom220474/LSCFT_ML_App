@@ -36,6 +36,16 @@ with st.sidebar:
         )
 
         st.divider()
+        st.subheader("Columns to Remove")
+
+        fields_to_remove = st.multiselect('Select columns you want to exclude (optional): '
+                                          ,options=column_headers
+                                          #,default='-- select an option --'
+                                          ,help='''Select any columns you are not
+                                           interested in or that are 
+                                          interfering with your results''')
+
+        st.divider()
         st.subheader("Train Your Model")
 
         train_percent_input = st.number_input(
@@ -43,15 +53,7 @@ with st.sidebar:
             min_value=0, max_value=50, step=1, value=20
         )
 
-        st.divider()
-        st.subheader("Columns to Remove")
-
-        fields_to_remove = st.multiselect('Select columns you want to exclude: '
-                                          ,column_headers
-                                          ,default='-- select an option --'
-                                          ,help='''Select any columns you are not
-                                           interested in or that are 
-                                          interfering with your results''')
+        
 
         # Run button in sidebar
         run_model = (
@@ -73,10 +75,10 @@ if run_model and uploaded_df is not None:
     with st.spinner('Running Machine Learning...'):
         train_pc = train_percent_input / 100
 
-        if fields_to_remove == '-- select an option --':
-            modified_df = uploaded_df
+        if fields_to_remove:
+          modified_df = uploaded_df.drop(fields_to_remove, axis=1)
         else:
-          modified_df = uploaded_df.drop([fields_to_remove])
+          modified_df = uploaded_df
 
         # prepare data
         X_train, X_test, y_train, y_test = ml.prepare_data(
@@ -95,8 +97,8 @@ if run_model and uploaded_df is not None:
         # --- Now results show in the main body ---
         st.header("Model Results")
 
-        st.write("Preview of uploaded data:")
-        st.dataframe(uploaded_df.head())
+        st.write("Here is a Preview of the Data you want to Analyse:")
+        st.dataframe(modified_df.head())
 
         st.write(f'The thing we are trying to predict is: **{field_of_interest}**')
         st.write(f'We are using **{train_percent_input}%** of the data to train the model')
