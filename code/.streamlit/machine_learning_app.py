@@ -43,6 +43,16 @@ with st.sidebar:
             min_value=0, max_value=50, step=1, value=20
         )
 
+        st.divider()
+        st.subheader("Columns to Remove")
+
+        fields_to_remove = st.multiselect('Select columns you want to exclude: '
+                                          ,column_headers
+                                          ,default='-- select an option --'
+                                          ,help='''Select any columns you are not
+                                           interested in or that are 
+                                          interfering with your results''')
+
         # Run button in sidebar
         run_model = (
             field_of_interest != "-- select an option --"
@@ -63,9 +73,14 @@ if run_model and uploaded_df is not None:
     with st.spinner('Running Machine Learning...'):
         train_pc = train_percent_input / 100
 
+        if fields_to_remove == '-- select an option --':
+            modified_df = uploaded_df
+        else:
+          modified_df = uploaded_df.drop([fields_to_remove])
+
         # prepare data
         X_train, X_test, y_train, y_test = ml.prepare_data(
-            uploaded_df, field_of_interest, train_pc
+           modified_df, field_of_interest, train_pc
         )
 
         # run model
