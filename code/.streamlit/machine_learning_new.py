@@ -144,52 +144,69 @@ def clean_column(name):
     # Replace forbidden characters with underscore
     return re.sub(r'[\[\]<>]', '_', name)
 
-def prepare_data(source_df,targ_col,train_pc):
-    
+def prepare_data(source_df, targ_col, train_pc):
     # Separate features and target
     X = source_df.drop(targ_col, axis=1)
-    y = source_df[targ_col]
-    # clean column names
+    y = source_df[targ_col].astype(str).str.strip().str.lower()
+
+    # Map text labels to binary
+    y = y.replace({
+        "y": 1, "yes": 1, "true": 1, "1": 1,
+        "n": 0, "no": 0, "false": 0, "0": 0
+    })
+
+    # Convert to numeric, invalid entries -> NaN
+    y = pd.to_numeric(y, errors="coerce")
+
+    # Keep only valid rows (drop NaNs in y)
+    mask = ~y.isna()
+    X = X.loc[mask].copy()
+    y = y.loc[mask].astype(int)
+
+    # Clean column names
     X.columns = [clean_column(col) for col in X.columns]
 
+    # Convert obvious numerics, leave objects for encoding
     X = X.apply(pd.to_numeric, errors="ignore")
 
     # Detect column types
-    categorical_cols = X.select_dtypes(include=['string','object','category']).columns.tolist()
-
+    categorical_cols = X.select_dtypes(include=['string', 'object', 'category']).columns.tolist()
     numeric_cols = X.select_dtypes(include=['int64', 'float64', 'uint8']).columns
 
     # Identify one-hot encoded columns
     one_hot_cols = [col for col in numeric_cols if is_one_hot_column(X[col])]
 
-    # Now exclude them from numerical preprocessing
+    # Exclude one-hot columns from scaling
     numerical_cols = [col for col in numeric_cols if col not in one_hot_cols]
 
-    # Fill missing values 
+    # Fill missing categorical values
     for col in categorical_cols:
         if pd.api.types.is_categorical_dtype(X[col]):
             if 'Missing' not in X[col].cat.categories:
                 X[col] = X[col].cat.add_categories('Missing')
         X[col] = X[col].fillna('Missing')
 
+    # Fill missing numeric values
     X[numerical_cols] = X[numerical_cols].fillna(0)
 
-    # add prefixes to identify category groups
+    # Add prefixes to categorical dummies
     prefixes = {col: col[:3] for col in categorical_cols}
 
-    # One-hot encode categorical columns
-    X = pd.get_dummies(X, columns=categorical_cols, prefix=(prefixes), dtype=int)
+    # One-hot encode categoricals
+    X = pd.get_dummies(X, columns=categorical_cols, prefix=prefixes, dtype=int)
 
-    # Scale numeric columns
+    # Scale numerical columns if they exist
     scaler = StandardScaler()
-
-    # scale numerical columns if they exist in the dataset
     if len(numerical_cols) > 0:
         X[numerical_cols] = scaler.fit_transform(X[numerical_cols])
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=train_pc, random_state=42)
-    
+
+    # Train/test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=train_pc, random_state=42
+    )
+
     return X_train, X_test, y_train, y_test
+
 
 def run_log_reg(X_train, X_test, y_train, y_test):
 
