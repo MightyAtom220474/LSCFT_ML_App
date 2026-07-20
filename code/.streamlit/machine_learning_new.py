@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import re
+import streamlit as st
 from sklearn import metrics
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
@@ -291,3 +292,37 @@ def prob_change_table_with_interpretation(coeff_df, X_train, baseline_prob=0.2, 
 # Example usage:
 # prob_table = prob_change_table_with_interpretation(co_eff_df, X_train, baseline_prob=0.2)
 # print(prob_table.head(10))
+
+def display_metric_status(metric_name, value):
+    """
+    Display model metric with traffic-light interpretation.
+
+    >= 0.90 = Excellent
+    >= 0.80 = Good
+    >= 0.70 = Acceptable
+    < 0.70 = Needs Improvement
+    """
+
+    if value >= 0.90:
+        st.success(
+            f"🟢 {metric_name}: {value:.1%} "
+            f"(Excellent - the model is performing very well)"
+        )
+
+    elif value >= 0.80:
+        st.success(
+            f"🟢 {metric_name}: {value:.1%} "
+            f"(Good - the model is performing well)"
+        )
+
+    elif value >= 0.70:
+        st.warning(
+            f"🟠 {metric_name}: {value:.1%} "
+            f"(Acceptable - the model may still be useful but should be interpreted with caution)"
+        )
+
+    else:
+        st.error(
+            f"🔴 {metric_name}: {value:.1%} "
+            f"(Poor - the model is struggling to make accurate predictions)"
+        )

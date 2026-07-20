@@ -5,7 +5,8 @@ import machine_learning_new as ml
 import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
+
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc, precision_score, recall_score, f1_score
 from sklearn.calibration import calibration_curve
 
 ##############################
@@ -93,20 +94,72 @@ if run_model and uploaded_df is not None:
         # shap values
         explainer = shap.Explainer(model, X_train)
         shap_values = explainer(X_test)
+        y_pred = model.predict(X_test)
 
         # --- Now results show in the main body ---
         st.header("Model Results")
 
-        st.write("Here is a Preview of the Data you want to Analyse:")
+        st.write("Here is a Preview of the Data you are Analysing:")
         st.dataframe(modified_df.head())
 
         st.write(f'The thing we are trying to predict is: **{field_of_interest}**')
         st.write(f'We are using **{train_percent_input}%** of the data to train the model')
 
+        st.header("Model Performance Metrics")
+        
         st.write(f"The Accuracy of Training Dataset is: {accuracy_train}%")
+        ml.display_metric_status("Training Accuracy", accuracy_train)
         st.write(f"The Accuracy of Test Dataset is: {accuracy_test}%")
+        ml.display_metric_status("Test Accuracy", accuracy_test)
+        st.write("Intercept = The model's starting prediction when all input variables are set to 0."
+                "The baseline level before any factors are taken into account")
+        st.write("A higher intercept means the model starts with a higher probability of a positive outcome."
+                "A lower (more negative) intercept means the model starts with a lower probability of a positive outcome.")
         st.write(f"Intercept (β0): {intercept}")
 
+        precision = precision_score(y_test, y_pred, zero_division=0)
+        st.write("Precision = Of all the cases the model predicted as positive, how many were actually positive?")
+        ml.display_metric_status("Precision", precision)
+        st.write("Recall = Of all the cases that were actually positive, how many did the model successfully find?")
+        recall = recall_score(y_test, y_pred, zero_division=0)
+        ml.display_metric_status("Recall (Sensitivity)", recall)
+        st.write("F1 Score = A single metric that balances Precision and Recall."
+                "How good is the model overall at finding positives without making too many mistakes?")
+        f1 = f1_score(y_test, y_pred, zero_division=0)
+        ml.display_metric_status("F1 Score", f1)
+               
+        class_balance = y_train.value_counts(normalize=True)
+
+        st.header("Outcome Balance")
+
+        st.write(
+            f"{class_balance.iloc[0]:.1%} of records are {field_of_interest} = 0 and "
+            f"{class_balance.iloc[1]:.1%} are {field_of_interest} = 1"
+            )
+        
+        st.markdown("""
+                    ### How to interpret the chart below
+
+                    Machine learning models learn from historical examples. 
+                    Before looking at model performance, it is important to 
+                    understand how common the outcome is within the dataset.
+
+                    - A balanced dataset contains similar numbers of records in each group.
+                    - An imbalanced dataset contains many more records in one group than the other.
+                    - Highly imbalanced datasets can make accuracy appear better than it really is.
+
+                    For example, if 95% of patients do not miss their appointment,
+                     a model that predicts "No DNA" for every patient would achieve 95% accuracy without actually learning anything useful.
+
+                    This information helps put the model's performance results into context.
+                    """)
+
+        
+        fig, ax = plt.subplots()
+        y_train.value_counts().plot(kind="bar", ax=ax)
+        st.pyplot(fig)
+        
+        
         fig1, ax = plt.subplots()
         co_eff_df.head(10).plot(
             kind='barh', 
@@ -265,7 +318,7 @@ if run_model and uploaded_df is not None:
           data used, under-confident - try using more data to train your model. This
           can be done by adjusting the input in the menu on the left hand side.
         """)
-
+        
         # ROC Curve
         st.header("ROC Curve")
 
@@ -290,6 +343,30 @@ if run_model and uploaded_df is not None:
           - 0.8–0.9 = good  
           - >0.9 = excellent  
         """)
+        
+        ml.display_metric_status("AUC", roc_auc)
+        
+        avg_metric = np.mean([precision, recall, f1, roc_auc])
+
+        if avg_metric >= 0.90:
+            st.success(
+                "Overall Assessment: This model appears to be highly effective at distinguishing between outcomes."
+            )
+
+        elif avg_metric >= 0.80:
+            st.success(
+                "Overall Assessment: This model performs well and may provide useful decision support."
+            )
+
+        elif avg_metric >= 0.70:
+            st.warning(
+                "Overall Assessment: The model shows reasonable predictive ability but should be used with caution."
+            )
+
+        else:
+            st.error(
+                "Overall Assessment: The model currently demonstrates limited predictive value and may require additional data or feature engineering."
+            )
 
         st.subheader("Global Feature Importance (SHAP Summary)")
 
@@ -303,6 +380,8 @@ if run_model and uploaded_df is not None:
         - **Positive values** push predictions towards Class 1.  
         - **Negative values** push predictions towards Class 0.  
         """)
+        
+
 else: 
   st.info('''Please upload a file and select your column of interest to 
           continue''')

@@ -48,15 +48,19 @@ st.markdown(
     """
     ### How To use the App!!!
 
-    1. Upload your data - Just choose a CSV file to get started.
+    1. Upload your data - Just choose a CSV file to get started. IMPORTANT!!! 
+       Please remove any patient identifiable information and any date/time 
+       fields prior to uploading your data
 
-    2. Pick out the field within your data that you want to be able to predict
+    2. Pick out the field within your data that you want to be able to predict.
+       This should contain binary values such as 0/1, Yes/No, Y/N
 
-    3. The app does the hard work - It prepares your data and runs several 
-    machine learning models.
+    3. The app does the hard work - It prepares your data and runs a logistic 
+       regression machine learning model against your data.
 
     4. See the results - The app shows you how well the model performs, and
-       the Top 10 Features used to make the decision
+       the Top 10 Features used to make the decision, and other important
+       metrics
 
         """
 )
