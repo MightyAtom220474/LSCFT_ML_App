@@ -191,7 +191,7 @@ def prepare_data(source_df, targ_col, train_pc):
     X[numerical_cols] = X[numerical_cols].fillna(0)
 
     # Add prefixes to categorical dummies
-    prefixes = {col: col[:3] for col in categorical_cols}
+    prefixes = {col: col[:5] for col in categorical_cols}
 
     # One-hot encode categoricals
     X = pd.get_dummies(X, columns=categorical_cols, prefix=prefixes, dtype=int)

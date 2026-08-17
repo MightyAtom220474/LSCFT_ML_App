@@ -5,33 +5,22 @@ import machine_learning_new as ml
 import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
+from pathlib import Path
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc, precision_score, recall_score, f1_score
 from sklearn.calibration import calibration_curve
 
-st.set_page_config(
-    page_title="Machine Learning Explorer",
-    layout="wide"
-    )
-
-# Session State Initialisation
-if "run_model" not in st.session_state:
-    st.session_state.run_model = False
-
-if "last_inputs" not in st.session_state:
-    st.session_state.last_inputs = None
-
 ##############################
 ##     Input Selectors      ##
 ##############################
+from pathlib import Path
+import pandas as pd
+import streamlit as st
 
-uploaded_df = None
-field_of_interest = "-- select an option --"
-fields_to_remove = []
-train_percent_input = 20
+DEFAULT_FILE = Path(r"\\xlancashirecare.nhs.uk\shares\Applications$\BITeam\Machine Learning\inpatient_readmissions.csv")
 
 with st.sidebar:
-
+    
     st.subheader("Machine Learning Inputs")
     st.divider()
 
@@ -42,21 +31,23 @@ with st.sidebar:
         type="csv"
     )
 
+    # Load uploaded file, otherwise use default file
     if uploaded_file is not None:
-
         uploaded_df = pd.read_csv(uploaded_file)
+        st.success(f"File {uploaded_file.name} has been successfully uploaded")
 
-        st.success(
-            f"File '{uploaded_file.name}' has been successfully uploaded"
-        )
+    elif DEFAULT_FILE.exists():
+        uploaded_df = pd.read_csv(DEFAULT_FILE)
+        st.info(f"Using default file: {DEFAULT_FILE.name}")
 
-        column_headers = (
-            ["-- select an option --"]
-            + uploaded_df.columns.tolist()
-        )
+    else:
+        uploaded_df = None
+
+    if uploaded_df is not None:
+
+        column_headers = ['-- select an option --'] + uploaded_df.columns.tolist()
 
         st.divider()
-
         st.subheader("Field of Interest")
 
         field_of_interest = st.selectbox(
@@ -65,18 +56,18 @@ with st.sidebar:
         )
 
         st.divider()
-
         st.subheader("Columns to Remove")
 
         fields_to_remove = st.multiselect(
-            "Select columns you want to exclude (optional)",
-            options=uploaded_df.columns.tolist(),
-            help="""Select any columns you are not interested in
-            or that are interfering with your results"""
+            "Select columns you want to exclude (optional):",
+            options=column_headers,
+            help="""
+            Select any columns you are not interested in
+            or that are interfering with your results.
+            """
         )
 
         st.divider()
-
         st.subheader("Train Your Model")
 
         train_percent_input = st.number_input(
@@ -87,61 +78,38 @@ with st.sidebar:
             value=20
         )
 
-        # Build a signature of all model inputs
-        current_inputs = (
-            uploaded_file.name,
-            field_of_interest,
-            tuple(sorted(fields_to_remove)),
-            train_percent_input
-        )
-
-        # Reset run_model if anything changes
-        if st.session_state.last_inputs is None:
-            st.session_state.last_inputs = current_inputs
-
-        elif current_inputs != st.session_state.last_inputs:
-            st.session_state.run_model = False
-            st.session_state.last_inputs = current_inputs
-
         st.divider()
 
-        if st.button("Run Machine Learning"):
-
-            if field_of_interest == "-- select an option --":
-
-                st.warning(
-                    "Please select a field of interest first."
-                )
-
-            else:
-
-                st.session_state.run_model = True
+        run_model = (
+            field_of_interest != "-- select an option --"
+            and st.button("Run Machine Learning")
+        )
 
     else:
-
-        st.session_state.run_model = False
-
+        field_of_interest = None
+        train_percent_input = None
+        run_model = False
+        uploaded_df = None
+        st.error(
+            f"No uploaded file and default file not found: {DEFAULT_FILE}"
+        )
 
 
 # -----------------------------
 # Main page for results
 # -----------------------------
-if (
-    st.session_state.run_model
-    and uploaded_df is not None
-    and field_of_interest != "-- select an option --"
-    ):
+if run_model and uploaded_df is not None:
     with st.spinner('Running Machine Learning...'):
         train_pc = train_percent_input / 100
 
         if fields_to_remove:
-            modified_df = uploaded_df.drop(fields_to_remove, axis=1)
+          modified_df = uploaded_df.drop(fields_to_remove, axis=1)
         else:
-            modified_df = uploaded_df
+          modified_df = uploaded_df
 
         # prepare data
         X_train, X_test, y_train, y_test = ml.prepare_data(
-            modified_df, field_of_interest, train_pc
+           modified_df, field_of_interest, train_pc
         )
 
         # run model
@@ -185,7 +153,7 @@ if (
                 "How good is the model overall at finding positives without making too many mistakes?")
         f1 = f1_score(y_test, y_pred, zero_division=0)
         ml.display_metric_status("F1 Score", f1)
-
+               
         class_balance = y_train.value_counts(normalize=True)
 
         st.header("Outcome Balance")
@@ -216,25 +184,6 @@ if (
         fig, ax = plt.subplots()
         y_train.value_counts().plot(kind="bar", ax=ax)
         st.pyplot(fig)
-        
-        st.markdown("""
-                    ### How to deal with imbalanced data 
-
-                    If the data is imbabalanced and the model is focussing on the wrong
-                    outcome e.g. it is focusing on attendances rather than DNA's as
-                    attendances are more common, there are several ways you can deal
-                    with this to see if your model can still make useful predictions:
-                    
-                    - Add a weighting to the data e.g. if DNA's make up around 10% of records
-                    you could give it a weighting of 10
-                    - Over-sampling which creates additional examples using the existing data
-                    - Create synthetic data which is another form of over-sampling
-
-                    If you find that your data is in=mbalanced you can try some of these
-                    using the buttons in the menu on the left to see what difference 
-                    each of these makes
-                    """)
-
         
         
         fig1, ax = plt.subplots()
@@ -290,6 +239,58 @@ if (
 
         # Feature Effects 
         st.header("Feature Effects (Odds Ratios)")
+        
+        st.markdown("""
+                    ### Understanding the Model Results
+
+                    #### Feature
+                    **What patient factor are we looking at?**
+
+                    Examples include:
+                    - Age
+                    - Previous missed appointments (DNAs)
+                    - Referral source
+                    - Diagnosis
+
+                    ---
+
+                    #### Coefficient (β)
+                    **Does this factor make the outcome more or less likely?**
+
+                    - **Positive value** → makes the outcome more likely
+                    - **Negative value** → makes the outcome less likely
+                    - **Larger values** → have a stronger influence on the prediction
+
+                    **Example:**  
+                    If *Previous DNA* has a positive coefficient, the model has
+                    learned that patients who previously missed appointments are
+                    more likely to miss future appointments.
+
+                    ---
+
+                    #### Odds Ratio (exp(β))
+                    **How much does this factor change the likelihood?**
+
+                    - **1** = no effect
+                    - **2** = about twice as likely
+                    - **0.5** = about half as likely
+
+                    **Example:**  
+                    If *Previous DNA* has an Odds Ratio of **2.0**, patients 
+                    with a previous DNA are about **twice as likely** to miss 
+                    another appointment compared with patients who have not 
+                    previously missed one.
+
+                    ---
+
+                    💡 **Important:**  
+                    Machine learning identifies factors that are associated with
+                    an outcome. It cannot tell us why something happens, but it
+                    can help us understand which factors have the strongest 
+                    influence on the prediction which can then be used to target
+                    more detailed qualitative research to help understand the 
+                    possible cause(s)
+                    """)
 
         coeffs = model.coef_[0]
         feature_names = X_train.columns if hasattr(X_train, "columns") else [f"X{i}" for i in range(len(coeffs))]
@@ -348,9 +349,9 @@ if (
         prob_table = ml.prob_change_table_with_interpretation(co_eff_df, X_train, baseline_prob=baseline_p)
         prob_table_top_10 = prob_table.head(10)
 
-        st.markdown('How to interpret the results')
+        # st.markdown('How to interpret the results')
         
-        st.write(prob_table_top_10)
+        # st.write(prob_table_top_10)
 
         
         # Confusion Matrix
@@ -459,17 +460,10 @@ if (
         """)
         
 
-if not st.session_state.run_model:
-
-    if uploaded_file is None:
-        st.info("Please upload a file to continue.")
-
-    elif field_of_interest == "-- select an option --":
-        st.info("Now select your field of interest.")
-
-    else:
-        st.success("✅ Now you're ready to run some Machine Learning!")
-
+else: 
+  st.info('''Please upload a file and select your column of interest to 
+          continue''')
+    
 ##############################
 ## Specific Patient Example ##
 ##############################

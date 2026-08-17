@@ -33,8 +33,8 @@ with st.expander("Learn more about how it works"):
     ### 📊 How to interpret the results
     - **Probabilities** → likelihood of the outcome for a given patient.  
     - **Odds ratios** → effect of each feature:  
-        - >1 = increases the odds.  
-        - <1 = decreases the odds.  
+        - > 1 = increases the odds.  
+        - < 1 = decreases the odds.  
     - **Confusion matrix** → where the model got predictions right vs wrong.  
     - **ROC curve** → how well the model separates outcomes across thresholds.  
     - **Calibration curve** → whether predicted probabilities match reality.  
@@ -58,7 +58,7 @@ st.markdown(
     3. The app does the hard work - It prepares your data and runs a logistic 
        regression machine learning model against your data.
 
-    4. See the results - The app shows you how well the model performs, and
+    4. See the results - The app shows you how well the model performs, 
        the Top 10 Features used to make the decision, and other important
        metrics
 
