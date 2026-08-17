@@ -8,6 +8,13 @@ import shap
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc, precision_score, recall_score, f1_score
 from sklearn.calibration import calibration_curve
+#from sklearn.linear_model import LogisticRegression
+from sklearn.utils import resample
+
+try:
+    from imblearn.over_sampling import SMOTE
+except:
+    SMOTE = None
 
 st.set_page_config(
     page_title="Machine Learning Explorer",
@@ -87,13 +94,71 @@ with st.sidebar:
             value=20
         )
 
+        st.divider()
+
+        st.subheader("Imbalanced Data Options")
+
+        imbalance_method = st.radio(
+            "How would you like to handle rare outcomes?",
+            options=[
+                "None",
+                "Class Weighting",
+                "Oversample Minority Class",
+                "SMOTE Synthetic Samples"
+            ],
+            help="""
+            None = Standard Logistic Regression
+
+            Class Weighting = Gives more importance to rare outcomes
+
+            Oversample Minority Class = Duplicates rare outcome records
+
+            SMOTE Synthetic Samples = Creates synthetic versions of rare outcome records
+            """
+        )
+        
+        prediction_threshold = st.slider(
+            "DNA Risk Threshold",
+            min_value=0.05,
+            max_value=0.95,
+            value=0.50,
+            step=0.05,
+            help="""
+            This controls how much evidence the model needs before predicting a patient
+            is at risk of a DNA (Did Not Attend).
+
+            Example:
+            • 0.50 = A patient must have at least a 50% predicted chance of DNA.
+            • 0.30 = A patient only needs a 30% predicted chance of DNA.
+
+            Lower thresholds:
+            • Identify more potential DNAs
+            • Increase Recall (fewer missed DNAs)
+            • Increase false positives
+
+            Higher thresholds:
+            • Reduce false positives
+            • Increase Precision
+            • May miss genuine DNAs
+
+            Suggested starting point:
+            • Balanced data: 0.50
+            • Rare DNA outcomes: 0.30 to 0.40
+
+            If your goal is to identify as many patients at risk of DNA as possible,
+            consider lowering the threshold and monitoring Recall.
+            """
+            )
+        
         # Build a signature of all model inputs
         current_inputs = (
-            uploaded_file.name,
-            field_of_interest,
-            tuple(sorted(fields_to_remove)),
-            train_percent_input
-        )
+                        uploaded_file.name,
+                        field_of_interest,
+                        tuple(sorted(fields_to_remove)),
+                        train_percent_input,
+                        imbalance_method,
+                        prediction_threshold
+                        )
 
         # Reset run_model if anything changes
         if st.session_state.last_inputs is None:
@@ -102,6 +167,9 @@ with st.sidebar:
         elif current_inputs != st.session_state.last_inputs:
             st.session_state.run_model = False
             st.session_state.last_inputs = current_inputs
+            
+
+
 
         st.divider()
 
@@ -143,16 +211,89 @@ if (
         X_train, X_test, y_train, y_test = ml.prepare_data(
             modified_df, field_of_interest, train_pc
         )
+        
+        selected_class_weight = None
+
+        if imbalance_method == "Class Weighting":
+
+            selected_class_weight = "balanced"
+
+            st.info(
+                "Using Class Weighting. Rare outcomes will receive more influence "
+                "during model training."
+            )
+
+        elif imbalance_method == "Oversample Minority Class":
+
+            train_df = pd.concat(
+                [
+                    X_train.reset_index(drop=True),
+                    y_train.reset_index(drop=True)
+                ],
+                axis=1
+            )
+
+            target_col = y_train.name
+
+            majority = train_df[train_df[target_col] == 0]
+            minority = train_df[train_df[target_col] == 1]
+
+            minority_upsampled = resample(
+                minority,
+                replace=True,
+                n_samples=len(majority),
+                random_state=42
+            )
+
+            balanced_df = pd.concat(
+                [majority, minority_upsampled]
+            )
+
+            X_train = balanced_df.drop(columns=[target_col])
+            y_train = balanced_df[target_col]
+
+            st.info(
+                "Using Oversampling. Minority outcome records have been duplicated."
+            )
+
+        elif imbalance_method == "SMOTE Synthetic Samples":
+
+            if SMOTE is not None:
+
+                smote = SMOTE(random_state=42)
+
+                X_train, y_train = smote.fit_resample(
+                    X_train,
+                    y_train
+                )
+
+                st.info(
+                    "Using SMOTE. Synthetic minority records have been created."
+                )
+
+            else:
+
+                st.warning(
+                    "SMOTE library not installed. Continuing without SMOTE."
+                )
 
         # run model
         model, accuracy_train, accuracy_test, co_eff_df, top_10_df, intercept = ml.run_log_reg(
-            X_train, X_test, y_train, y_test
-        )
+                X_train,
+                X_test,
+                y_train,
+                y_test,
+                class_weight=selected_class_weight
+            )
 
         # shap values
         explainer = shap.Explainer(model, X_train)
         shap_values = explainer(X_test)
-        y_pred = model.predict(X_test)
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
+
+        y_pred = (
+            y_pred_proba >= prediction_threshold
+        ).astype(int)
 
         # --- Now results show in the main body ---
         st.header("Model Results")
@@ -162,6 +303,8 @@ if (
 
         st.write(f'The thing we are trying to predict is: **{field_of_interest}**')
         st.write(f'We are using **{train_percent_input}%** of the data to train the model')
+        st.write(f"Imbalanced data strategy: **{imbalance_method}**"
+)
 
         st.header("Model Performance Metrics")
         
@@ -186,14 +329,18 @@ if (
         f1 = f1_score(y_test, y_pred, zero_division=0)
         ml.display_metric_status("F1 Score", f1)
 
-        class_balance = y_train.value_counts(normalize=True)
-
         st.header("Outcome Balance")
 
+        class_balance = y_train.value_counts(normalize=True)
+
+        pct_0 = class_balance.get(0, 0)
+        pct_1 = class_balance.get(1, 0)
+
         st.write(
-            f"{class_balance.iloc[0]:.1%} of records are {field_of_interest} = 0 and "
-            f"{class_balance.iloc[1]:.1%} are {field_of_interest} = 1"
-            )
+            f"{pct_0:.1%} of records are {field_of_interest} = 0 and "
+            f"{pct_1:.1%} are {field_of_interest} = 1"
+        )
+
         
         st.markdown("""
                     ### How to interpret the chart below
@@ -220,9 +367,9 @@ if (
         st.markdown("""
                     ### How to deal with imbalanced data 
 
-                    If the data is imbabalanced and the model is focussing on the wrong
+                    If the data is imbalanced and the model is focussing on the wrong
                     outcome e.g. it is focusing on attendances rather than DNA's as
-                    attendances are more common, there are several ways you can deal
+                    DNA's are rare, there are several ways you can deal
                     with this to see if your model can still make useful predictions:
                     
                     - Add a weighting to the data e.g. if DNA's make up around 10% of records

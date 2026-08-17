@@ -209,10 +209,10 @@ def prepare_data(source_df, targ_col, train_pc):
     return X_train, X_test, y_train, y_test
 
 
-def run_log_reg(X_train, X_test, y_train, y_test):
+def run_log_reg(X_train,X_test,y_train,y_test,class_weight=None):
 
     # 1. Fit logistic regression
-    model = LogisticRegression(max_iter=1000)
+    model = LogisticRegression(max_iter=1000,class_weight=class_weight)
     model.fit(X_train, y_train)
 
     # 2. Predictions & accuracy
