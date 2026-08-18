@@ -118,14 +118,14 @@ with st.sidebar:
         )
         
         prediction_threshold = st.slider(
-            "DNA Risk Threshold",
+            "Event Risk Threshold",
             min_value=0.05,
             max_value=0.95,
             value=0.50,
             step=0.05,
             help="""
             This controls how much evidence the model needs before predicting a patient
-            is at risk of a DNA (Did Not Attend).
+            is at risk of the thing you are trying to predict happening
 
             Example:
             • 0.50 = A patient must have at least a 50% predicted chance of DNA.
