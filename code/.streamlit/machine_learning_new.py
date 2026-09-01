@@ -25,10 +25,24 @@ def model_runner(X_train, y_train, X_test, y_test, model_type, model_name):
 
     accuracy_train = np.mean(y_pred_train == y_train)
     accuracy_test = np.mean(y_pred_test == y_test)
-    precision_score_test = precision_score(y_test, y_pred_test, average='micro')
-    recall_sensitivity_score_test = recall_score(y_test, y_pred_test, average='micro')
+    precision_score_test = precision_score(
+                                            y_test,
+                                            y_pred_test,
+                                            zero_division=0
+                                        )
+
+    recall_sensitivity_score_test = recall_score(
+                                                y_test,
+                                                y_pred_test,
+                                                zero_division=0
+                                                )
+
+    f1_score_result = f1_score(
+                                y_test,
+                                y_pred_test,
+                                zero_division=0
+                                )
     specificity_score_test = precision_score(y_test, y_pred_test, pos_label=0)
-    f1_score_result = f1_score(y_test, y_pred_test, average='micro')       
     mae_train = metrics.mean_absolute_error(y_train, y_pred_train)
     mae_test = metrics.mean_absolute_error(y_test, y_pred_test)
     mse_train = metrics.mean_squared_error(y_train, y_pred_train)
@@ -57,47 +71,546 @@ def model_runner(X_train, y_train, X_test, y_test, model_type, model_name):
         'Test R2': r2_test
     }
 
-def run_all_models(X_train, y_train, X_test, y_test):
+def run_all_models(
+    X_train,
+    y_train,
+    X_test,
+    y_test):
+
     results = []
 
-    # Models with varying depth
-    for i in range(1, 10):
-        results.append(model_runner(X_train, y_train, X_test, y_test,
-                        DecisionTreeClassifier(max_depth=i),
-                        f'Decision Tree - Depth:{i}'))
+    progress_bar = st.progress(0)
 
-        results.append(model_runner(X_train, y_train, X_test, y_test,
-                        RandomForestClassifier(max_depth=i),
-                        f'Random Forest - Depth:{i}'))
+    status_text = st.empty()
+    
+    total_models = 8
 
-        results.append(model_runner(X_train, y_train, X_test, y_test,
-                        XGBClassifier(max_depth=i, use_label_encoder=False, eval_metric='mlogloss'),
-                        f'XG Boost - Depth:{i}'))
+    current_model = 0
 
-    # Models without depth tuning
-    results.append(model_runner(X_train, y_train, X_test, y_test,
-                    LogisticRegression(max_iter=1000), 'Logistic Regression'))
+    # Logistic Regression
+    status_text.text("Running Logistic Regression...")
 
-    results.append(model_runner(X_train, y_train, X_test, y_test,
-                    AdaBoostClassifier(), 'ADA Boost'))
+    results.append(
+        model_runner(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            LogisticRegression(max_iter=1000),
+            "Logistic Regression"
+        )
+    )
 
-    results.append(model_runner(X_train, y_train, X_test, y_test,
-                    CatBoostClassifier(silent=True), 'Cat Boost'))
+    current_model += 1
 
-    results.append(model_runner(X_train, y_train, X_test, y_test,
-                    LGBMClassifier(), 'Light Gradient Boost'))
+    progress_bar.progress(
+        current_model / total_models
+    )
+    
+    temp_df = pd.DataFrame(results)
 
-    results.append(model_runner(X_train, y_train, X_test, y_test,
-                    HistGradientBoostingClassifier(), 'Histogram Gradient Boost'))
+    leader = (
+        temp_df
+        .sort_values(
+            by="F1 Score",
+            ascending=False
+        )
+        .iloc[0]
+    )
 
-    results.append(model_runner(X_train, y_train, X_test, y_test,
-                    svm.SVC(), 'Support Vector Machine'))
+    status_text.info(
+        f"""
+    Running model {current_model}/{total_models}
 
-    results.append(model_runner(X_train, y_train, X_test, y_test,
-                    GaussianNB(), 'Naive Bayes'))
+    Current leader:
+    {leader['Model']}
+
+    F1 Score:
+    {leader['F1 Score']:.3f}
+    """
+    )
+
+    # Decision Tree
+    status_text.text("Running Decision Tree...")
+
+    results.append(
+        model_runner(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            DecisionTreeClassifier(
+                max_depth=5,
+                random_state=42
+            ),
+            "Decision Tree"
+        )
+    )
+
+    current_model += 1
+
+    progress_bar.progress(
+        current_model / total_models
+    )
+    
+    temp_df = pd.DataFrame(results)
+    
+    leader = (
+        temp_df
+        .sort_values(
+            by="F1 Score",
+            ascending=False
+        )
+        .iloc[0]
+    )
+
+    status_text.info(
+        f"""
+    Running model {current_model}/{total_models}
+
+    Current leader:
+    {leader['Model']}
+
+    F1 Score:
+    {leader['F1 Score']:.3f}
+    """
+    )
+
+    # Random Forest
+    
+    status_text.text("Running Random Forest...")
+    
+    results.append(
+        model_runner(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            RandomForestClassifier(
+                n_estimators=100,
+                max_depth=5,
+                random_state=42
+            ),
+            "Random Forest"
+        )
+    )
+    
+    current_model += 1
+    
+    progress_bar.progress(
+        current_model / total_models
+    )
+    
+    temp_df = pd.DataFrame(results)
+    
+    leader = (
+        temp_df
+        .sort_values(
+            by="F1 Score",
+            ascending=False
+        )
+        .iloc[0]
+    )
+
+    status_text.info(
+        f"""
+    Running model {current_model}/{total_models}
+
+    Current leader:
+    {leader['Model']}
+
+    F1 Score:
+    {leader['F1 Score']:.3f}
+    """
+    )
+
+    # XGBoost
+    
+    status_text.text("Running XGBoost...")
+    
+    results.append(
+        model_runner(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            XGBClassifier(
+                max_depth=5,
+                eval_metric="logloss",
+                random_state=42
+            ),
+            "XGBoost"
+        )
+    )
+    
+    current_model += 1
+    
+    progress_bar.progress(
+        current_model / total_models
+    )
+    
+    temp_df = pd.DataFrame(results)
+    
+    leader = (
+        temp_df
+        .sort_values(
+            by="F1 Score",
+            ascending=False
+        )
+        .iloc[0]
+    )
+
+    status_text.info(
+        f"""
+    Running model {current_model}/{total_models}
+
+    Current leader:
+    {leader['Model']}
+
+    F1 Score:
+    {leader['F1 Score']:.3f}
+    """
+    )
+
+    # LightGBM
+    
+    status_text.text("Running LightGBM Classifier...")
+    
+    results.append(
+        model_runner(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            LGBMClassifier(
+                random_state=42
+            ),
+            "LightGBM"
+        )
+    )
+    
+    current_model += 1
+    
+    progress_bar.progress(
+        current_model / total_models
+    )
+    
+    temp_df = pd.DataFrame(results)
+    
+    leader = (
+        temp_df
+        .sort_values(
+            by="F1 Score",
+            ascending=False
+        )
+        .iloc[0]
+    )
+
+    status_text.info(
+        f"""
+    Running model {current_model}/{total_models}
+
+    Current leader:
+    {leader['Model']}
+
+    F1 Score:
+    {leader['F1 Score']:.3f}
+    """
+    )
+
+    # CatBoost
+    
+    status_text.text("Running CatBoost...")
+    
+    results.append(
+        model_runner(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            CatBoostClassifier(
+                silent=True,
+                random_state=42
+            ),
+            "CatBoost"
+        )
+    )
+    
+    current_model += 1
+    
+    progress_bar.progress(
+        current_model / total_models
+    )
+    
+    temp_df = pd.DataFrame(results)
+    
+    leader = (
+        temp_df
+        .sort_values(
+            by="F1 Score",
+            ascending=False
+        )
+        .iloc[0]
+    )
+
+    status_text.info(
+        f"""
+    Running model {current_model}/{total_models}
+
+    Current leader:
+    {leader['Model']}
+
+    F1 Score:
+    {leader['F1 Score']:.3f}
+    """
+    )
+
+    # Histogram Gradient Boost
+    
+    status_text.text("Running Histogram Gradient Boost...")
+    
+    results.append(
+        model_runner(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            HistGradientBoostingClassifier(),
+            "Histogram Gradient Boosting"
+        )
+    )
+    
+    current_model += 1
+
+    progress_bar.progress(
+        current_model / total_models
+    )
+    
+    temp_df = pd.DataFrame(results)
+    
+    leader = (
+        temp_df
+        .sort_values(
+            by="F1 Score",
+            ascending=False
+        )
+        .iloc[0]
+    )
+
+    status_text.info(
+        f"""
+    Running model {current_model}/{total_models}
+
+    Current leader:
+    {leader['Model']}
+
+    F1 Score:
+    {leader['F1 Score']:.3f}
+    """
+    )
+
+    # Naive Bayes
+    
+    status_text.text("Running Naive Bayes...")
+    
+    results.append(
+        model_runner(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            GaussianNB(),
+            "Naive Bayes"
+        )
+    )
+    
+    current_model += 1
+
+    progress_bar.progress(
+        current_model / total_models
+    )
+    
+    temp_df = pd.DataFrame(results)
+    
+    leader = (
+        temp_df
+        .sort_values(
+            by="F1 Score",
+            ascending=False
+        )
+        .iloc[0]
+    )
+
+    status_text.info(
+        f"""
+    Running model {current_model}/{total_models}
+
+    Current leader:
+    {leader['Model']}
+
+    F1 Score:
+    {leader['F1 Score']:.3f}
+    """
+    )
+    
+    progress_bar.progress(1.0)
+
+    status_text.success(
+        "✅ Model comparison complete"
+    )
+
+    return pd.DataFrame(results)
+
+def run_selected_model(
+    X_train,
+    X_test,
+    y_train,
+    y_test,
+    model_name,
+    depth=5,
+    class_weight=None
+    ):
+
+    if model_name == "Logistic Regression":
+
+        model = LogisticRegression(
+            max_iter=1000,
+            class_weight=class_weight
+        )
+
+    elif model_name == "Decision Tree*":
+
+        model = DecisionTreeClassifier(
+            max_depth=depth,
+            class_weight=class_weight,
+            random_state=42
+        )
+
+    elif model_name == "Random Forest":
+
+        model = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=depth,
+            class_weight=class_weight,
+            random_state=42
+        )
+
+    elif model_name == "XGBoost":
+
+        model = XGBClassifier(
+            max_depth=depth,
+            eval_metric="logloss",
+            random_state=42
+        )
+
+    elif model_name == "AdaBoost*":
+
+        model = AdaBoostClassifier(
+            random_state=42
+        )
+
+    elif model_name == "CatBoost":
+
+        model = CatBoostClassifier(
+            silent=True,
+            random_state=42
+        )
+
+    elif model_name == "LightGBM":
+
+        model = LGBMClassifier(
+            random_state=42
+        )
+
+    elif model_name == "Histogram Gradient Boosting":
+
+        model = HistGradientBoostingClassifier()
+
+    elif model_name == "Support Vector Machine":
+
+        model = svm.SVC(
+            probability=True
+        )
+
+    elif model_name == "Naive Bayes":
+
+        model = GaussianNB()
+
+    else:
+
+        raise ValueError(
+            f"Unknown model: {model_name}"
+        )
+
+    model.fit(
+        X_train,
+        y_train
+    )
+
+    accuracy_train = round(
+        model.score(
+            X_train,
+            y_train
+        ) * 100,
+        2
+    )
+
+    accuracy_test = round(
+        model.score(
+            X_test,
+            y_test
+        ) * 100,
+        2
+    )
+
+    return (
+        model,
+        accuracy_train,
+        accuracy_test
+    )
+
+
+# def run_all_models(X_train, y_train, X_test, y_test):
+#     results = []
+
+#     # Models with varying depth
+#     for i in range(1, 10):
+#         results.append(model_runner(X_train, y_train, X_test, y_test,
+#                         DecisionTreeClassifier(max_depth=i),
+#                         f'Decision Tree - Depth:{i}'))
+
+#         results.append(model_runner(X_train, y_train, X_test, y_test,
+#                         RandomForestClassifier(max_depth=i),
+#                         f'Random Forest - Depth:{i}'))
+
+#         results.append(model_runner(X_train, y_train, X_test, y_test,
+#                         XGBClassifier(max_depth=i, use_label_encoder=False, eval_metric='mlogloss'),
+#                         f'XG Boost - Depth:{i}'))
+
+#     # Models without depth tuning
+#     results.append(model_runner(X_train, y_train, X_test, y_test,
+#                     LogisticRegression(max_iter=1000), 'Logistic Regression'))
+
+#     results.append(model_runner(X_train, y_train, X_test, y_test,
+#                     AdaBoostClassifier(), 'ADA Boost'))
+
+#     results.append(model_runner(X_train, y_train, X_test, y_test,
+#                     CatBoostClassifier(silent=True), 'Cat Boost'))
+
+#     results.append(model_runner(X_train, y_train, X_test, y_test,
+#                     LGBMClassifier(), 'Light Gradient Boost'))
+
+#     results.append(model_runner(X_train, y_train, X_test, y_test,
+#                     HistGradientBoostingClassifier(), 'Histogram Gradient Boost'))
+
+#     results.append(model_runner(X_train, y_train, X_test, y_test,
+#                     svm.SVC(), 'Support Vector Machine'))
+
+#     results.append(model_runner(X_train, y_train, X_test, y_test,
+#                     GaussianNB(), 'Naive Bayes'))
 
     # Return as DataFrame
-    return pd.DataFrame(results)
+    # return pd.DataFrame(results)
 
 def fix_dtypes(df):
     df = df.copy()  # avoid changing original
@@ -140,10 +653,40 @@ def is_one_hot_column(series):
     return set(series.dropna().unique()).issubset({0, 1})
 
 def clean_column(name):
-    # Make sure it's a string first
+
     name = str(name)
-    # Replace forbidden characters with underscore
-    return re.sub(r'[\[\]<>]', '_', name)
+
+    name = re.sub(
+        r'[^A-Za-z0-9_]',
+        '_',
+        name
+    )
+
+    return name
+
+def make_unique_columns(columns):
+
+    seen = {}
+
+    new_cols = []
+
+    for col in columns:
+
+        if col not in seen:
+
+            seen[col] = 0
+
+            new_cols.append(col)
+
+        else:
+
+            seen[col] += 1
+
+            new_cols.append(
+                f"{col}_{seen[col]}"
+            )
+
+    return new_cols
 
 def prepare_data(source_df, targ_col, train_pc):
     # Separate features and target
@@ -191,10 +734,26 @@ def prepare_data(source_df, targ_col, train_pc):
     X[numerical_cols] = X[numerical_cols].fillna(0)
 
     # Add prefixes to categorical dummies
-    prefixes = {col: col[:5] for col in categorical_cols}
+    #prefixes = {col: col[:5] for col in categorical_cols}
+    prefixes = {col: clean_column(col) for col in categorical_cols
+}
 
     # One-hot encode categoricals
     X = pd.get_dummies(X, columns=categorical_cols, prefix=prefixes, dtype=int)
+    
+    # Final XGBoost-safe column names
+    X.columns = [
+        re.sub(
+            r'[^A-Za-z0-9_]',
+            '_',
+            str(col)
+        )
+        for col in X.columns
+    ]
+    
+    # Remove duplicate columns created during cleaning
+
+    X.columns = make_unique_columns(X.columns)
 
     # Scale numerical columns if they exist
     scaler = StandardScaler()
@@ -305,13 +864,13 @@ def display_metric_status(metric_name, value):
 
     if value >= 0.90:
         st.success(
-            f"🟢 {metric_name}: {value:.1%} "
+            f"🟢 {metric_name}: {value:.1}% "
             f"(Excellent - the model is performing very well)"
         )
 
     elif value >= 0.80:
         st.success(
-            f"🟢 {metric_name}: {value:.1%} "
+            f"🟢 {metric_name}: {value:.1}% "
             f"(Good - the model is performing well)"
         )
 
@@ -326,3 +885,67 @@ def display_metric_status(metric_name, value):
             f"🔴 {metric_name}: {value:.1%} "
             f"(Poor - the model is struggling to make accurate predictions)"
         )
+        
+def build_model_from_name(model_name):
+
+    if "Logistic Regression" in model_name:
+        return LogisticRegression(max_iter=1000)
+
+    elif "Decision Tree" in model_name:
+
+        depth = int(
+            model_name.split(":")[-1]
+        )
+
+        return DecisionTreeClassifier(
+            max_depth=depth
+        )
+
+    elif "Random Forest" in model_name:
+
+        depth = int(
+            model_name.split(":")[-1]
+        )
+
+        return RandomForestClassifier(
+            max_depth=depth
+        )
+
+    elif "XG Boost" in model_name:
+
+        depth = int(
+            model_name.split(":")[-1]
+        )
+
+        return XGBClassifier(
+            max_depth=depth,
+            eval_metric="logloss"
+        )
+
+    elif "ADA Boost" in model_name:
+
+        return AdaBoostClassifier()
+
+    elif "Cat Boost" in model_name:
+
+        return CatBoostClassifier(
+            silent=True
+        )
+
+    elif "Light Gradient Boost" in model_name:
+
+        return LGBMClassifier()
+
+    elif "Histogram Gradient Boost" in model_name:
+
+        return HistGradientBoostingClassifier()
+
+    elif "Support Vector Machine" in model_name:
+
+        return svm.SVC(
+            probability=True
+        )
+
+    elif "Naive Bayes" in model_name:
+
+        return GaussianNB()
