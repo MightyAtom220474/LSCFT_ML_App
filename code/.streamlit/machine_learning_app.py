@@ -536,9 +536,16 @@ if (
 
         st.header("Model Performance Metrics")
         
-        st.write(f"The Accuracy of Training Dataset is: {accuracy_train}%")
+        # Training Dataset
+        st.write(
+            f"The Accuracy of Training Dataset is: {accuracy_train * 100:.2f}%"
+            )
         ml.display_metric_status("Training Accuracy", accuracy_train)
-        st.write(f"The Accuracy of Test Dataset is: {accuracy_test}%")
+        
+        # Test Dataset
+        st.write(
+                    f"The Accuracy of Test Dataset is: {accuracy_test * 100:.2f}%"
+                    )
         ml.display_metric_status("Test Accuracy", accuracy_test)
         
         if hasattr(model, "intercept_"):

@@ -907,13 +907,13 @@ def display_metric_status(metric_name, value):
 
     if value >= 0.90:
         st.success(
-            f"🟢 {metric_name}: {value:.1}% "
+            f"🟢 {metric_name}: {value:.1%} "
             f"(Excellent - the model is performing very well)"
         )
 
     elif value >= 0.80:
         st.success(
-            f"🟢 {metric_name}: {value:.1}% "
+            f"🟢 {metric_name}: {value:.1%} "
             f"(Good - the model is performing well)"
         )
 
