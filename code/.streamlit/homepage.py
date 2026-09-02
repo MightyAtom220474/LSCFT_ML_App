@@ -1,6 +1,11 @@
 import streamlit as st
 #from app_style import global_page_style
 
+st.set_page_config(
+    page_title="Machine Learning Processor",
+    layout="wide"
+    )
+
 
 st.logo("https://lancsvp.org.uk/wp-content/uploads/2021/08/nhs-logo-300x189.png")
 
