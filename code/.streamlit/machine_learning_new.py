@@ -689,8 +689,45 @@ def make_unique_columns(columns):
     return new_cols
 
 def prepare_data(source_df, targ_col, train_pc):
+    
     # Separate features and target
     X = source_df.drop(targ_col, axis=1)
+    
+
+
+    # detect deprivation index columns and keep as categorical
+    imd_columns = []
+
+    for col in X.columns:
+
+        col_lower = str(col).lower()
+
+        # Common IMD naming patterns
+        if (
+            "imd" in col_lower
+            or "index of multiple deprivation" in col_lower
+            or ("index" in col_lower and "dep" in col_lower)
+            or ("multiple" in col_lower and "deprivation" in col_lower)
+            or ("deprivation" in col_lower and "decile" in col_lower)
+            or ("deprivation" in col_lower and "index" in col_lower)
+        ):
+            imd_columns.append(col)
+
+    # Convert any detected IMD columns to categorical
+    for col in imd_columns:
+
+        X[col] = (
+            X[col]
+            .fillna("Unknown")
+            .astype(str)
+            .str.strip()
+        )
+
+    if imd_columns:
+        print(f"IMD columns detected: {imd_columns}")
+    else:
+        print("No IMD columns detected")
+        
     y = source_df[targ_col].astype(str).str.strip().str.lower()
 
     # Map text labels to binary
@@ -711,7 +748,9 @@ def prepare_data(source_df, targ_col, train_pc):
     X.columns = [clean_column(col) for col in X.columns]
 
     # Convert obvious numerics, leave objects for encoding
-    X = X.apply(pd.to_numeric, errors="ignore")
+    for col in X.columns:
+        if col not in imd_columns:
+            X[col] = pd.to_numeric(X[col],errors="ignore")
 
     # Detect column types
     categorical_cols = X.select_dtypes(include=['string', 'object', 'category']).columns.tolist()
@@ -724,11 +763,15 @@ def prepare_data(source_df, targ_col, train_pc):
     numerical_cols = [col for col in numeric_cols if col not in one_hot_cols]
 
     # Fill missing categorical values
-    for col in categorical_cols:
-        if pd.api.types.is_categorical_dtype(X[col]):
-            if 'Missing' not in X[col].cat.categories:
-                X[col] = X[col].cat.add_categories('Missing')
-        X[col] = X[col].fillna('Missing')
+    for col in X.columns:
+        if col not in imd_columns:
+            try:
+                X[col] = pd.to_numeric(X[col])
+            except (ValueError, TypeError):
+                pass
+
+    for col in imd_columns:
+        X[col] = X[col].astype("category")
 
     # Fill missing numeric values
     X[numerical_cols] = X[numerical_cols].fillna(0)

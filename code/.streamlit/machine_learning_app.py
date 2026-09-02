@@ -25,18 +25,42 @@ st.set_page_config(
 # Session State Initialisation
 if "run_model" not in st.session_state:
     st.session_state.run_model = False
+    
+if "uploaded_df" not in st.session_state:
+    st.session_state.uploaded_df = None
 
 if "last_inputs" not in st.session_state:
     st.session_state.last_inputs = None
+
+if "field_of_interest" not in st.session_state:
+    st.session_state.field_of_interest = "-- select an option --"
+
+if "fields_to_remove" not in st.session_state:
+    st.session_state.fields_to_remove = []
+
+if "train_percent_input" not in st.session_state:
+    st.session_state.train_percent_input = 20
+
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = "Best"
+
+if "tree_depth" not in st.session_state:
+    st.session_state.tree_depth = 5
+
+if "class_balancing" not in st.session_state:
+    st.session_state.class_balancing = "None"
+
+if "prediction_threshold" not in st.session_state:
+    st.session_state.prediction_threshold = 0.5
 
 ##############################
 ##     Input Selectors      ##
 ##############################
 
 uploaded_df = None
-field_of_interest = "-- select an option --"
-fields_to_remove = []
-train_percent_input = 20
+field_of_interest = st.session_state.field_of_interest
+fields_to_remove = st.session_state.fields_to_remove
+train_percent_input = st.session_state.train_percent_input
 
 with st.sidebar:
 
@@ -52,7 +76,16 @@ with st.sidebar:
 
     if uploaded_file is not None:
 
-        uploaded_df = pd.read_csv(uploaded_file)
+        if uploaded_file is not None:
+
+            if (
+                st.session_state.uploaded_df is None
+                or st.session_state.get("uploaded_filename") != uploaded_file.name
+            ):
+                st.session_state.uploaded_df = pd.read_csv(uploaded_file)
+                st.session_state.uploaded_filename = uploaded_file.name
+
+            uploaded_df = st.session_state.uploaded_df
 
         st.success(
             f"File '{uploaded_file.name}' has been successfully uploaded"
@@ -106,6 +139,7 @@ with st.sidebar:
                 "Tree Depth",
                 min_value=1,
                 max_value=20,
+                value=st.session_state.tree_depth,
                 key="model_depth",
                 help="""
                 Controls the complexity of tree-based
@@ -161,7 +195,7 @@ with st.sidebar:
                     min_value=0,
                     max_value=50,
                     step=1,
-                    value=20,
+                    value=st.session_state.train_percent_input,
                     key="train_percent_input"
                     )
 
