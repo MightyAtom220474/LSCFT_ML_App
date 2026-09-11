@@ -1,0 +1,13 @@
+catboost==1.2.5
+imbalanced_learn==0.14.2
+lightgbm==4.7.0
+matplotlib==3.11.1
+numpy==2.5.3
+pandas==3.0.5
+pyodbc==5.1.0
+scikit_learn==1.9.1
+seaborn==0.13.2
+shap==0.47.2
+SQLAlchemy==2.0.32
+streamlit==1.38.0
+xgboost==3.4.1
